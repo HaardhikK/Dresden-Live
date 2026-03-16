@@ -1,5 +1,5 @@
 # Dresden Live
-##Transit Map
+## Transit Map
 
 I came across the `dvb` Python library one evening; it wraps the public departure API for Dresdner Verkehrsbetriebe (DVB), Dresden's public transit operator. There's no real GPS feed available, so I thought it would be fun to see if I could fake one. This is the result: a live 3D map of Dresden that infers tram and bus positions in real time from schedule data, routing geometry, and a bit of math.
 
