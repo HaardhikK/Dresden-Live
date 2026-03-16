@@ -4,6 +4,8 @@ I came across the `dvb` Python library one evening; it wraps the public departur
 
 It is a side project I built for fun. Not production software, not commercial, just something cool to look at.
 
+Play the video:
+
 ---
 
 <img src="demo.gif" alt="Dresden Transit Live Map Demo" width="100%">
