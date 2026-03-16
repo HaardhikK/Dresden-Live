@@ -1,0 +1,39 @@
+# Dependencies
+.venv/
+node_modules/
+
+# Build output
+frontend/dist/
+
+# Claude / agent tooling
+.claude/
+.agent/
+
+# Markdown (except README)
+*.md
+!README.md
+
+# Logs
+*.log
+*.err
+
+# Misc project files
+design-system/
+docs/
+3d_tram_screenshot.png
+implementation_plan.md
+prompts.md
+walkthrough.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Env
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db

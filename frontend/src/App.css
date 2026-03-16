@@ -1,0 +1,508 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Dark glassmorphism palette for 3D Cyberpunk Island */
+  --bg-deep: #030508;
+  --bg-surface: #0a0f18;
+  --glass: rgba(10, 15, 24, 0.75);
+  --glass-strong: rgba(13, 17, 23, 0.88);
+  --glass-border: rgba(56, 189, 248, 0.12);
+  --glass-border-hover: rgba(56, 189, 248, 0.25);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --tram: #f59e0b;
+  --tram-glow: rgba(245, 158, 11, 0.3);
+  --bus: #22d3ee;
+  --bus-glow: rgba(34, 211, 238, 0.3);
+  --live: #34d399;
+  --live-glow: rgba(52, 211, 153, 0.35);
+  --offline: #f87171;
+  --stop: #38bdf8;
+  --accent: #818cf8;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --blur: blur(20px);
+  --blur-sm: blur(12px);
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.map-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Header ────────────────────────────────────────────────── */
+
+.header-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px 8px 12px;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px; /* Pill shape */
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  user-select: none;
+}
+
+.header-logo {
+  width: 28px;
+  height: 28px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.header-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.header-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+/* ─── Stats Panel ───────────────────────────────────────────── */
+
+.stats-panel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: min(65vw, 560px);
+  pointer-events: none;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  background: var(--glass);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: border-color 0.3s ease;
+}
+
+.stat-badge.tram-badge { border-color: rgba(245, 158, 11, 0.2); }
+.stat-badge.bus-badge { border-color: rgba(34, 211, 238, 0.2); }
+
+.stat-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.tram-badge .stat-icon { stroke: var(--tram); }
+.bus-badge .stat-icon { stroke: var(--bus); }
+
+.stat-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stat-dot.live {
+  background: var(--live);
+  box-shadow: 0 0 0 0 var(--live-glow);
+  animation: pulse 2s infinite;
+}
+
+.stat-dot.offline { background: var(--offline); }
+.stat-dot.tram { background: var(--tram); }
+.stat-dot.bus { background: var(--bus); }
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 var(--live-glow); }
+  70% { box-shadow: 0 0 0 10px rgba(52, 211, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+
+/* ─── Clock Overlay ─────────────────────────────────────────── */
+
+.clock-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 8px 14px;
+  background: var(--glass);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+.clock-time {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.clock-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.clock-date {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.clock-freshness {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.clock-freshness.fresh {
+  color: var(--live);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.clock-freshness.recent {
+  color: var(--tram);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.clock-freshness.stale {
+  color: var(--offline);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+/* ─── Legend Panel ──────────────────────────────────────────── */
+
+.legend-panel {
+  position: absolute;
+  left: 16px;
+  bottom: 32px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 130px;
+  padding: 14px 16px;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.legend-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.legend-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.legend-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tram-icon {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.tram-icon svg { stroke: var(--tram); }
+
+.bus-icon {
+  background: rgba(34, 211, 238, 0.15);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+}
+.bus-icon svg { stroke: var(--bus); }
+
+.legend-stop {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--stop);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+/* ─── Loading Overlay ───────────────────────────────────────── */
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-deep);
+  transition: opacity 0.6s ease;
+}
+
+.loading-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(148, 163, 184, 0.15);
+  border-top-color: var(--tram);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+  margin-bottom: 18px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.loading-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* ─── Popups ────────────────────────────────────────────────── */
+
+.maplibregl-popup-content {
+  background: var(--glass-strong) !important;
+  backdrop-filter: var(--blur) !important;
+  -webkit-backdrop-filter: var(--blur) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-lg) !important;
+  color: var(--text-primary) !important;
+  padding: 0 !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: var(--glass-strong) !important;
+}
+
+.maplibregl-popup-close-button {
+  color: var(--text-muted) !important;
+  font-size: 18px !important;
+  padding: 4px 8px !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+}
+
+.vehicle-popup {
+  padding: 12px 16px;
+  min-width: 200px;
+}
+
+.vehicle-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.vehicle-popup-line {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.vehicle-popup-mode {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.vehicle-popup-direction {
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+}
+
+.vehicle-popup-delay {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vehicle-popup-delay.on-time { color: var(--live); }
+.vehicle-popup-delay.delayed { color: var(--tram); }
+.vehicle-popup-delay.very-delayed { color: var(--offline); }
+
+.vehicle-popup-stop {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--glass-border);
+}
+
+/* ─── MapLibre overrides ────────────────────────────────────── */
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px !important;
+  background: rgba(13, 17, 23, 0.7) !important;
+  color: var(--text-muted) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--text-secondary) !important;
+}
+
+.maplibregl-ctrl-group {
+  background: var(--glass-strong) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow) !important;
+  backdrop-filter: var(--blur-sm) !important;
+}
+
+.maplibregl-ctrl-group button {
+  background: transparent !important;
+  border-bottom-color: var(--glass-border) !important;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background: rgba(56, 189, 248, 0.08) !important;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--glass-border) !important;
+}
+
+.maplibregl-ctrl button .maplibregl-ctrl-icon {
+  filter: invert(0.75);
+}
+
+/* ─── Responsive ────────────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .header-overlay {
+    top: 10px;
+    left: 10px;
+  }
+
+  .stats-panel {
+    top: 10px;
+    right: 10px;
+    gap: 6px;
+  }
+
+  .legend-panel {
+    left: 10px;
+    bottom: 16px;
+    min-width: unset;
+  }
+
+  .stat-badge {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}
